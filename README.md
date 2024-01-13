@@ -52,4 +52,4 @@ $ pre-commit install -t pre-commit -t commit-msg
 ```
 
 ## License
-This repository is licensed under the [MIT License](LICENSE).
+This repository is licensed under the [MIT License](LICENSE.txt).
