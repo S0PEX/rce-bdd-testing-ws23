@@ -1,0 +1,23 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-added-large-files
+
+-   repo: https://github.com/espressif/conventional-precommit-linter
+    rev: v1.6.0
+    hooks:
+      - id: conventional-precommit-linter
+        stages: [commit-msg]
+        args:
+          - --types=chore,build,test,ci,docs,feat,fix,refactor,remove,revert,fox,style
+          - --subject-min-length=10
+          - --body-max-line-length=150
+
+-   repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+    -   id: hadolint
