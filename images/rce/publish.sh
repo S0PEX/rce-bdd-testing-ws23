@@ -1,0 +1,7 @@
+#!/bin/bash
+REGISTRY=192.168.122.181:32000
+VERSION=latest
+RCE_VERSION=10.5.0
+
+docker tag "s0pex/rce-$RCE_VERSION:$VERSION" "$REGISTRY/s0pex/rce-$RCE_VERSION:$VERSION"
+docker push "$REGISTRY/s0pex/rce-$RCE_VERSION:$VERSION"
