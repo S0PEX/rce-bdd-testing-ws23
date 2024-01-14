@@ -1,2 +1,6 @@
 *.deb*
 venv
+
+src/__pycache__/
+
+kubeconfig.yaml

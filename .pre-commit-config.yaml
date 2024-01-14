@@ -16,8 +16,3 @@ repos:
           - --types=chore,build,test,ci,docs,feat,fix,refactor,remove,revert,fox,style
           - --subject-min-length=10
           - --body-max-line-length=150
-
--   repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
-    hooks:
-    -   id: hadolint
