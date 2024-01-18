@@ -15,7 +15,7 @@ RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y \
     openjdk-18-jre-headless:amd64
 
-# Install RCE
+# Install RCE & cleanup .deb file
 COPY rce-${RCE_VERSION}*-standard.x86_64.deb .
 RUN apt-get install -y ./rce-${RCE_VERSION}*-standard.x86_64.deb
 
@@ -27,5 +27,8 @@ RUN rm -rf rce-*.x86_64.deb
 RUN useradd -m -s /bin/bash rce
 USER rce
 
+# Copy configuration file to default location
+COPY --chown=rce:rce configuration.json /home/rce/.rce/default/configuration.json
+
 # Entrypoint as RCE in headless mode, as otherwise it will fail to start without a display server
-ENTRYPOINT ["rce", "--headless"]
+ENTRYPOINT ["rce", "--headless", "--upgrade-profile"]
