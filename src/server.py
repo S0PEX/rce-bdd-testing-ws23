@@ -7,7 +7,8 @@ from kubernetes import config, client as k8s_client
 from kubernetes.client.models.v1_namespace import V1Namespace
 from kubernetes.client.models.v1_pod import V1Pod
 
-from sources.src import k8s
+from src import k8s
+from src.instance_manager import K8sInstanceManager, IInstanceManager, IManagedInstance
 
 # Enable logging for the chaos mesh client
 logging.getLogger("chaosmesh")
@@ -19,9 +20,6 @@ config.load_kube_config("kubeconfig.yaml")
 kube_v1_api = k8s_client.CoreV1Api()
 chaos_client = ChaosClient(version="v1alpha1")
 chaos_namespace: V1Namespace | None = None
-
-# App variables
-rce_pods: list[V1Pod] = []
 
 # Create flask app
 app = Flask(__name__)
@@ -41,16 +39,21 @@ if __name__ == "__main__":
             logging.info(f"Previous experiment ${namespace_name} exists, deleting it!")
             kube_v1_api.delete_namespace(name=namespace_name)
 
-    logging.info("Creating namespace for experiment")
-    namespace_template = k8s.namespace_template(
-        name=f"rce-chaos-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
-    chaos_namespace = kube_v1_api.create_namespace(namespace_template)
+    logging.info("Creating instance manager for experiment")
+    instance_manager: IInstanceManager = K8sInstanceManager(
+        namespace=f"rce-chaos-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
+        k8s_client=kube_v1_api)
 
-    logging.info("Creating rce pod")
-    rce_pod_template = k8s.rce_pod_template("node1", ["-console"])
+    logging.info("Starting instances")
+    rce_pods: list[IManagedInstance] = []
+    for i in range(0, 2):
+        rce_pods.append(instance_manager.start_instance(f"rce-{i}"))
 
-    rce_pods.append(kube_v1_api.create_namespaced_pod(namespace=chaos_namespace.metadata.name,
-                                                      body=rce_pod_template))
+    # Wait for input to stop the experiment
+    input("Press Enter to stop the experiment...")
 
-    logging.info("Starting flask server")
-    app.run()
+    logging.info("Stopping instances")
+    for rce_pod in rce_pods:
+        instance_manager.stop_instance(rce_pod)
+
+    logging.info("Experiment finished")
