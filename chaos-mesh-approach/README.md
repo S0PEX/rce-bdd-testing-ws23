@@ -70,9 +70,20 @@ The following configuration are available:
 
 **Best is to use string replace and replace all occurrences of the above default values with your desired values.**
 
+## API
+The API is a simple REST API with the following endpoints:
+- `GET /`: Returns a simple welcome message.
+- `GET /instances`: Returns a list of all currently running RCE instances.
+- `GET /instances/<instance-name>`: Returns the status of the RCE instance with the given name.
+- `POST /instances`: Starts a new RCE instance. Payload: `{"name": "instance-name", "args": ["array", "of", "args"]}`
+- `DELETE /instances/<instance-name>`: Stops the RCE instance with the given name. Stopping the instance will also
+  delete the pod.
+
+
 ## Known Issues
 - The RCE instances and namespaces are not cleaned up automatically but either on a new start of the API server or by
   manually deleting the namespaces.
 - Currently, there is no way to manage multiple parallel tests as only a single namespace is used. Optimally a new
   namespace would be created for each test and deleted after the test is finished.
 - The Chaos Mesh API is not completed and only a single network tests for timeouts is implemented.
+- Zero Fault Tolerance, if something goes wrong the API server will be undefined behavior.

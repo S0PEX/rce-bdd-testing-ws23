@@ -51,7 +51,8 @@ def hello_world():
 @app.route("/instances/", methods=['GET', 'POST'])
 def instances_create():
     if request.method == 'GET':
-        return jsonify([instance_to_json(instance) for instance in instance_manager.instances.values()])
+        return jsonify(
+            [instance_to_json(instance) for instance in instance_manager.instances.values()])
 
     if request.method == 'POST':
         if not request.is_json:
