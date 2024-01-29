@@ -14,15 +14,21 @@ class IManagedInstance(ABC):
 
     :param instance_name: The name of the instance.
     :type instance_name: str
+    :param args: The arguments to pass to the instance.
+    :type args: list[str]
     :param port_mappings: The port mappings of the instance.
     :type port_mappings: dict[str, int]
     """
-    def __init__(self, instance_name: str, port_mappings: dict[str, int] = None):
+
+    def __init__(self, instance_name: str, args: list[str] = None,
+                 port_mappings: dict[str, int] = None):
         """
         Create a new managed instance.
 
         :param instance_name: The name of the instance.
         :type instance_name: str
+        :param args: The arguments to pass to the instance.
+        :type args: list[str]
         :param port_mappings: The port mappings of the instance.
         :type port_mappings: dict[str, int]
 
@@ -30,6 +36,7 @@ class IManagedInstance(ABC):
         :rtype: ManagedInstance
         """
         self._instance_name = instance_name
+        self._args = [] if args is None else args
         self._port_mappings = {} if port_mappings is None else port_mappings
         pass
 
@@ -42,6 +49,16 @@ class IManagedInstance(ABC):
         :type: str
         """
         return self._instance_name
+
+    @property
+    def args(self) -> list[str]:
+        """
+        Arguments of the instance.
+
+        :getter: Get the arguments of the instance.
+        :type: list[str]
+        """
+        return self._args
 
     @property
     def port_mappings(self) -> dict[str, int]:
@@ -62,8 +79,14 @@ class K8sManagedInstance(IManagedInstance):
     :type instance_name: str
     :param namespace: The namespace to create instances in.
     :type namespace: str
+    :param args: The arguments to pass to the instance.
+    :type args: list[str]
+    :param port_mappings: The port mappings of the instance.
+    :type port_mappings: dict[str, int]
     """
-    def __init__(self, instance_name: str, namespace: str, port_mappings: dict[str, int] = None):
+
+    def __init__(self, instance_name: str, namespace: str, args: list[str] = None,
+                 port_mappings: dict[str, int] = None):
         """
             Create a new managed instance.
 
@@ -71,11 +94,15 @@ class K8sManagedInstance(IManagedInstance):
             :type instance_name: str
             :param namespace: The namespace to create instances in.
             :type namespace: str
+            :param args: The arguments to pass to the instance.
+            :type args: list[str]
+            :param port_mappings: The port mappings of the instance.
+            :type port_mappings: dict[str, int]
 
             :return: The managed instance.
             :rtype: ManagedInstance
             """
-        super().__init__(instance_name, port_mappings)
+        super().__init__(instance_name, args, port_mappings)
         self._namespace = namespace
 
 
@@ -92,8 +119,31 @@ class IInstanceManager(ABC):
         :rtype: InstanceManager
         """
 
-        self._instances: list[IManagedInstance] = []
+        self._instances: dict[str, IManagedInstance] = {}
+        self._meta_information: dict[str, str] = {}
         pass
+
+    @property
+    def instances(self) -> dict[str, IManagedInstance]:
+        """
+        Instances managed by the instance manager.
+
+        :getter: Get the instances managed by the instance manager.
+        :type: dict[str, IManagedInstance]
+        """
+        return self._instances
+
+    def get_instance(self, instance_name: str) -> IManagedInstance | None:
+        """
+        Get an instance by name.
+
+        :param instance_name: The name of the instance.
+        :type instance_name: str
+
+        :return: The instance.
+        :rtype: ManagedInstance | None
+        """
+        return self._instances.get(instance_name, None)
 
     @abstractmethod
     def start_instance(self, instance_name: str, args: list[str] = None) -> IManagedInstance:
@@ -120,6 +170,15 @@ class IInstanceManager(ABC):
         """
         pass
 
+    def get_meta_information(self) -> dict[str, str]:
+        """
+        Get meta information about the instance manager.
+
+        :return: The meta information.
+        :rtype: dict[str, str]
+        """
+        return self._meta_information
+
 
 class K8sInstanceManager(IInstanceManager):
     """
@@ -132,6 +191,7 @@ class K8sInstanceManager(IInstanceManager):
     :param rce_image: The rce image to use.
     :type rce_image: str
     """
+
     def __init__(self, namespace: str, k8s_client: client.CoreV1Api,
                  rce_image: str = "localhost:32000/s0pex/rce-10.5.0:latest"):
         """
@@ -157,6 +217,9 @@ class K8sInstanceManager(IInstanceManager):
         namespace_tmplt = namespace_template(self._namespace)
         self._k8s_client.create_namespace(namespace_tmplt)
         _logger.debug(f"Created namespace {self._namespace}")
+
+        self._meta_information["namespace"] = self._namespace
+        self._meta_information["rce_image"] = self._rce_image
 
     def start_instance(self, instance_name: str, args: list[str] = None) -> IManagedInstance:
         """
@@ -189,7 +252,9 @@ class K8sInstanceManager(IInstanceManager):
         _logger.debug(
             f"Exposed instance {instance_name} to via NodePort with port mappings {port_mappings}")
 
-        return K8sManagedInstance(instance_name, instance_name, port_mappings)
+        instance = K8sManagedInstance(instance_name, self._namespace, args, port_mappings)
+        self._instances[instance_name] = instance
+        return instance
 
     def stop_instance(self, instance: IManagedInstance) -> None:
         """
@@ -203,3 +268,4 @@ class K8sInstanceManager(IInstanceManager):
         _logger.debug(f"Deleting pod {instance.instance_name}")
         self._k8s_client.delete_namespaced_pod(f"rce-pod-{instance.instance_name}", self._namespace)
         _logger.debug(f"Deleted pod {instance.instance_name}")
+        self._instances.pop(instance.instance_name)

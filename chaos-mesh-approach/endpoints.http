@@ -1,0 +1,11 @@
+### Create a new instance
+POST http://localhost:5000/instances/
+Content-Type: application/json
+
+{
+  "name": "test",
+  "args": []
+}
+
+### Get instance by name
+GET http://localhost:5000/instances/test

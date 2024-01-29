@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 
 from chaosmesh.client import Client as ChaosClient
-from flask import Flask
+from flask import Flask, request, jsonify
 from kubernetes import config, client as k8s_client
 from kubernetes.client.models.v1_namespace import V1Namespace
 
@@ -19,13 +19,66 @@ kube_v1_api = k8s_client.CoreV1Api()
 chaos_client = ChaosClient(version="v1alpha1")
 chaos_namespace: V1Namespace | None = None
 
+# Instance manager
+instance_manager: IInstanceManager | None = None
+
 # Create flask app
 app = Flask(__name__)
 
 
+def instance_to_json(instance: IManagedInstance):
+    """
+    Convert an instance to a JSON representation.
+
+    :param instance: The instance to convert.
+    :type instance: IManagedInstance
+
+    :return: The JSON representation.
+    :rtype: dict[str, any]
+    """
+    return {
+        "name": instance.instance_name,
+        "args": instance.args,
+        "ports": instance.port_mappings,
+    }
+
+
 @app.route('/')
 def hello_world():
-    return 'Hello World!'
+    return 'The server is running!\n' + str(instance_manager.get_meta_information())
+
+
+@app.route("/instances/", methods=['GET', 'POST'])
+def instances_create():
+    if request.method == 'GET':
+        return jsonify([instance_to_json(instance) for instance in instance_manager.instances.values()])
+
+    if request.method == 'POST':
+        if not request.is_json:
+            return "Request is not JSON!", 400
+        json = request.get_json()
+        instance_name = json.get("name", None)
+        if instance_name is None:
+            return "Instance name is missing!", 400
+        args = json.get("args", [])
+        if args is None:
+            return "Instance arguments are missing!", 400
+        instance = instance_manager.start_instance(instance_name, args)
+        return jsonify(instance_to_json(instance))
+
+
+@app.route('/instances/<instance_name>', methods=['GET', 'DELETE'])
+def instances(instance_name: str):
+    instance = instance_manager.get_instance(instance_name)
+    if instance is None:
+        return f"Instance with name {instance_name} doesn't exist!", 404
+
+    if request.method == 'GET':
+        return jsonify(instance_to_json(instance))
+    if request.method == 'DELETE':
+        # Stop actually deletes the instance, there is no real stop command at the moment
+        instance_manager.stop_instance(instance)
+        return "Instance stopped", 200
 
 
 if __name__ == "__main__":
@@ -38,20 +91,9 @@ if __name__ == "__main__":
             kube_v1_api.delete_namespace(name=namespace_name)
 
     logging.info("Creating instance manager for experiment")
-    instance_manager: IInstanceManager = K8sInstanceManager(
+    instance_manager = K8sInstanceManager(
         namespace=f"rce-chaos-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}",
         k8s_client=kube_v1_api)
 
-    logging.info("Starting instances")
-    rce_pods: list[IManagedInstance] = []
-    for i in range(0, 2):
-        rce_pods.append(instance_manager.start_instance(f"rce-{i}"))
-
-    # Wait for input to stop the experiment
-    input("Press Enter to stop the experiment...")
-
-    logging.info("Stopping instances")
-    for rce_pod in rce_pods:
-        instance_manager.stop_instance(rce_pod)
-
-    logging.info("Experiment finished")
+    logging.info("Starting flask app")
+    app.run()

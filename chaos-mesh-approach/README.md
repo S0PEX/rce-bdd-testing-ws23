@@ -69,3 +69,10 @@ The following configuration are available:
 - `K8S-IMAGE`: The Docker image used for the RCE instances. Defaults to `localhost:32000/s0pex/rce-10.5.0:latest`.
 
 **Best is to use string replace and replace all occurrences of the above default values with your desired values.**
+
+## Known Issues
+- The RCE instances and namespaces are not cleaned up automatically but either on a new start of the API server or by
+  manually deleting the namespaces.
+- Currently, there is no way to manage multiple parallel tests as only a single namespace is used. Optimally a new
+  namespace would be created for each test and deleted after the test is finished.
+- The Chaos Mesh API is not completed and only a single network tests for timeouts is implemented.
