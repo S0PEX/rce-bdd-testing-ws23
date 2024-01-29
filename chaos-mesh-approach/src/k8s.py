@@ -4,8 +4,6 @@ from kubernetes import client
 This module contains functions to create kubernetes objects.
 """
 
-_RCE_IMAGE_MAME = "localhost:32000/s0pex"
-
 
 def rce_pod_template(node_name: str, image: str, args: list[str] = None):
     """

@@ -5,10 +5,8 @@ from chaosmesh.client import Client as ChaosClient
 from flask import Flask
 from kubernetes import config, client as k8s_client
 from kubernetes.client.models.v1_namespace import V1Namespace
-from kubernetes.client.models.v1_pod import V1Pod
 
-from src import k8s
-from src.instance_manager import K8sInstanceManager, IInstanceManager, IManagedInstance
+from instance_manager import K8sInstanceManager, IInstanceManager, IManagedInstance
 
 # Enable logging for the chaos mesh client
 logging.getLogger("chaosmesh")

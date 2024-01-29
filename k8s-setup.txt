@@ -1,0 +1,12 @@
+1. Install Ubuntu 22.04 LTS
+1.1. Choose MicroK8S
+2. Setup Chaos Mesh
+2.1. Update `sudo apt-get update && sudo apt-get upgrade`
+2.2. Setup kubectl
+```
+cd $HOME
+mkdir .kube
+cd .kube
+microk8s config > config
+```
+2.3. Install Chaos Mesh `curl -sSL https://mirrors.chaos-mesh.org/v2.6.2/install.sh | bash -s -- --microk8s`

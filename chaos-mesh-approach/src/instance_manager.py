@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from kubernetes import client
 
-from src.k8s import namespace_template, rce_pod_template, rce_node_port_service_template
+from k8s import namespace_template, rce_pod_template, rce_node_port_service_template
 
 _logger = logging.getLogger(__name__)
 

@@ -1,8 +1,8 @@
 *.deb*
 venv
 
-src/__pycache__/
+chaos-mesh-approach/src/__pycache__/
 
-kubeconfig.yaml
+chaos-mesh-approach/kubeconfig.yaml
 
 .idea/
