@@ -257,7 +257,7 @@ Scenario Outline: Connection with other minor version - uplink connection
 @NoGUITestSuite
 Scenario: Basic networking between two instances (auto-start connections, no relay flag) with connection loss
 
-	Given instances "NodeA, NodeB" using the default build
+  Given instances "NodeA, NodeB" using the default build
   And   configured network connections "NodeA->NodeB [autoStart]"
 
   When  starting all instances
